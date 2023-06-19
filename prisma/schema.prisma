@@ -1,0 +1,166 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("LOCAL_DATABASE_URL")
+  relationMode = "prisma"
+}
+
+// ENUMS
+enum QuizType {
+  KNOWLEDGE
+  PREFERENCE
+  RESULT
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum QuestionType {
+  SINGLECHOICE
+  MULTICHOICE
+}
+
+// MODELS
+model User {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt   DateTime  @updatedAt
+  username String
+  email String
+  password String
+  avatar Image?
+  role Role
+  settings Json
+
+  ratings Rating[]
+  quizzes Quiz[]
+  comments    Comment[]
+}
+
+model Quiz {
+  id          Int        @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime  @updatedAt
+  title       String
+  description String
+  type        QuizType
+  verified    Boolean
+  image       Image?
+  rating      Rating[]
+  comments    Comment[]
+  tags        Tag[]
+  questions Question[]
+
+  // User
+  author User @relation(fields: [authorId], references: [id])
+  authorId Int
+
+  @@index([authorId])
+}
+
+model Rating {
+  id     Int    @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt   DateTime  @updatedAt
+  score  Float
+
+  // User
+  user User @relation(fields: [userId], references: [id])
+  userId Int @unique
+
+  @@index([userId])
+
+  // Quiz
+  quiz   Quiz   @relation(fields: [quizId], references: [id])
+  quizId Int
+
+  @@index([quizId])
+}
+
+model Comment {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt   DateTime  @updatedAt
+  content String @db.VarChar(255)
+
+  // User
+  user User @relation(fields: [userId], references: [id])
+  userId Int @unique
+
+  @@index([userId])
+
+  // Quiz
+  quiz   Quiz   @relation(fields: [quizId], references: [id])
+  quizId Int
+
+  @@index([quizId])
+}
+
+model Tag {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt   DateTime  @updatedAt
+  name String @db.VarChar(32)
+  quizzes Quiz[]
+}
+
+model Image {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt   DateTime  @updatedAt
+  title String @db.VarChar(64)
+  filename String @db.VarChar(255)
+  url String @db.VarChar(255)
+
+  // Quiz
+  quiz Quiz @relation(fields: [quizId], references: [id])
+  quizId Int @unique
+
+  // Question
+  question Question @relation(fields: [questionId], references: [id])
+  questionId Int @unique
+
+  // User
+  user User @relation(fields: [userId], references: [id])
+  userId Int @unique
+}
+
+model Question {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt   DateTime  @updatedAt
+  text String
+  image Image?
+  type QuestionType
+  points Int
+  answers Answer[]
+
+  // Quiz
+  quiz Quiz @relation(fields: [quizId], references: [id])
+  quizId Int
+
+  @@index([quizId])
+}
+
+model Answer {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt   DateTime  @updatedAt
+  text String @db.VarChar(255)
+  isCorrect Boolean
+
+  // Question
+  question Question @relation(fields: [questionId], references: [id])
+  questionId Int
+
+  @@index([questionId])
+}
